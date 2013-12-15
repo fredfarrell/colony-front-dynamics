@@ -84,7 +84,6 @@ void timestep(int tm) {
 
 	}
 
-		//print(tm+1000);
 
 	for(int i=0;i<rx.size();i++) { //move the points
 
@@ -95,8 +94,6 @@ void timestep(int tm) {
 		rxup=(rx[iup]-rx[i]<-SIZE*0.5)?rx[iup]+SIZE:rx[iup]; 
 		rxdwn=(rx[idwn]-rx[i]>SIZE*0.5)?rx[idwn]-SIZE:rx[idwn]; 
 
-		//cout<<i<<" "<<rx[i]<<" "<<rx[idwn]<<" "<<rx[iup]<<" "<<0.5*(rx[idwn]+rx[iup])<<endl;
-		//cout<<i<<" "<<ry[i]<<" "<<ry[idwn]<<" "<<ry[iup]<<" "<<0.5*(ry[idwn]+ry[iup])<<endl;
 
 		rx[i]=deltarx[i]; //update with Lax scheme
 		ry[i]=deltary[i];
@@ -107,27 +104,6 @@ void timestep(int tm) {
 		if (rx[i]>SIZE) rx[i]-=SIZE;
 		if (rx[i]<0) rx[i]+=SIZE;
 	}
-
-
-
-	for(int i=0;i<rx.size();i++) { //check for overlaps
-		for(int j=0;j<i; j++) {
-
-
-			double drsq = (rx[i]-rx[j])*(rx[i]-rx[j]) + (ry[i]-ry[j])*(ry[i]-ry[j]);
-
-
-			if(drsq<0.25) { //if there's an overlap delete all points between the overlapping points
-
-				rx.erase(rx.begin()+j,rx.begin()+i);
-				ry.erase(ry.begin()+j,ry.begin()+i);
-
-			}
-	
-		}
-	}
-
-
 
 
 }
