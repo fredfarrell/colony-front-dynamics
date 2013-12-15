@@ -26,7 +26,7 @@ void init() {
 	for(int i=0;i<SIZE;i++) {
 
 		rx.push_back(i);
-		ry.push_back(1000*exp(-(i-500)*(i-500)/1000.0));
+		ry.push_back(100*exp(-(i-500)*(i-500)/1000.0));
 		//ry.push_back(0);
 
 		deltarx.push_back(0);
@@ -67,10 +67,13 @@ void timestep(int tm) {
 		int iup = (i==rx.size()-1)?0:i+1;
 		int idwn = (i==0)?rx.size()-1:i-1;
 
-		double drx = rx[iup]-rx[idwn];
-		if (fabs(drx)>SIZE*0.5) drx = drx - SIZE*SGN(drx);
-		double dry = ry[iup]-ry[idwn];
+		double drx = rx[i]-rx[idwn]; //v is +ve for delta-rx
+		if (fabs(drx)>SIZE*0.5) drx = drx - SIZE*SGN(drx); //minimum image for PBCs
+
+		double dry = ry[iup]-ry[i]; //v is -ve for delta-ry
 		double norm = sqrt(drx*drx+dry*dry);
+
+		//cout<<i<<" "<<tm<<" "<<drx<<" "<<dry<<" "<<norm<<endl;
 
 		drx/=norm; dry/=norm;
 
@@ -78,8 +81,8 @@ void timestep(int tm) {
 		rxup=(rx[iup]-rx[i]<-SIZE*0.5)?rx[iup]+SIZE:rx[iup]; 
 		rxdwn=(rx[idwn]-rx[i]>SIZE*0.5)?rx[idwn]-SIZE:rx[idwn]; 
 
-		deltarx[i] = 0.5*(rxup+rxdwn)  - dt*v*dry/(2*dx); //update with Lax scheme
-		deltary[i] =  0.5*(ry[iup]+ry[idwn]) + dt*v*drx/(2*dx);
+		deltarx[i] =  - dt*v*dry/dx; //update with upwind scheme
+		deltary[i] =    dt*v*drx/dx;
 
 
 	}
@@ -95,8 +98,8 @@ void timestep(int tm) {
 		rxdwn=(rx[idwn]-rx[i]>SIZE*0.5)?rx[idwn]-SIZE:rx[idwn]; 
 
 
-		rx[i]=deltarx[i]; //update with Lax scheme
-		ry[i]=deltary[i];
+		rx[i]+=deltarx[i]; //update with upwind scheme
+		ry[i]+=deltary[i];
 	}
 
 
