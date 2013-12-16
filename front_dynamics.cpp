@@ -26,7 +26,7 @@ void init() {
 	for(int i=0;i<SIZE;i++) {
 
 		rx.push_back(i);
-		ry.push_back(1000*exp(-(i-500)*(i-500)/1000.0));
+		ry.push_back(100*exp(-(i-500)*(i-500)/1000.0));
 		//ry.push_back(0);
 
 		deltarx.push_back(0);
@@ -86,8 +86,10 @@ void timestep(int tm) {
 		//rx2up=(rx[up(up(i))]-rx[i]<-SIZE*0.5)?rx[up(up(i))]+SIZE:rx[up(up(i))];  not actually used
 		rx2dwn=(rx[dwn(dwn(i))]-rx[i]>SIZE*0.5)?rx[dwn(dwn(i))]-SIZE:rx[dwn(dwn(i))]; 
 
-		double drx = (2*rxup + 3*rx[i] - 6*rxdwn + 2*rx2dwn)/6.0; //3rd order upwind scheme w/ different sign for the two dimensions
+		double drx = (2*rxup + 3*rx[i] - 6*rxdwn + rx2dwn)/6.0; //3rd order upwind scheme w/ different sign for the two dimensions
 		double dry = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/6.0; 
+
+		//cout<<i<<" "<<rxup<<" "<<rxdwn<<" "<<rx2dwn<<" "<<drx<<" "<<dry<<endl;
 
 		double norm = sqrt(drx*drx+dry*dry);
 
@@ -124,9 +126,11 @@ int main() {
 	for (int i=0;i<5000;i++) {
 		
 		timestep(i);
+		//if(i%100==0) print(i);
 		print(i);
 		cout<<i<<" "<<rx.size()<<endl;
 	}
+
 
 	print(2000);
 
