@@ -77,10 +77,6 @@ void timestep(int tm) {
 
 		drx/=norm; dry/=norm;
 
-		double rxup,rxdwn;
-		rxup=(rx[iup]-rx[i]<-SIZE*0.5)?rx[iup]+SIZE:rx[iup]; 
-		rxdwn=(rx[idwn]-rx[i]>SIZE*0.5)?rx[idwn]-SIZE:rx[idwn]; 
-
 		deltarx[i] =  - dt*v*dry/dx; //update with upwind scheme
 		deltary[i] =    dt*v*drx/dx;
 
@@ -91,12 +87,7 @@ void timestep(int tm) {
 	for(int i=0;i<rx.size();i++) { //move the points
 
 		int iup = (i==rx.size()-1)?0:i+1;
-		int idwn = (i==0)?rx.size()-1:i-1;
-
-		double rxup,rxdwn;
-		rxup=(rx[iup]-rx[i]<-SIZE*0.5)?rx[iup]+SIZE:rx[iup]; 
-		rxdwn=(rx[idwn]-rx[i]>SIZE*0.5)?rx[idwn]-SIZE:rx[idwn]; 
-
+		int idwn = (i==0)?rx.size()-1:i-1; 
 
 		rx[i]+=deltarx[i]; //update with upwind scheme
 		ry[i]+=deltary[i];
