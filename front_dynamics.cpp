@@ -14,8 +14,9 @@ using namespace std;
 
 vector<double> rx,ry,deltarx,deltary;
 double dt=0.01;
-double dx=0.1;
+double ds=1.0;
 double v=1.0;
+double D=1.0;
 double ymin,ymax;
 
 
@@ -86,24 +87,25 @@ void timestep(int tm) {
 		//rx2up=(rx[up(up(i))]-rx[i]<-SIZE*0.5)?rx[up(up(i))]+SIZE:rx[up(up(i))];  not actually used
 		rx2dwn=(rx[dwn(dwn(i))]-rx[i]>SIZE*0.5)?rx[dwn(dwn(i))]-SIZE:rx[dwn(dwn(i))]; 
 
-		double drx = (2*rxup + 3*rx[i] - 6*rxdwn + rx2dwn)/6.0; //3rd order upwind scheme w/ different sign for the two dimensions
-		double dry = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/6.0; 
+		double drxds = (2*rxup + 3*rx[i] - 6*rxdwn + rx2dwn)/(6.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
+		double dryds = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/(6.0*ds); 
 
-		//cout<<i<<" "<<rxup<<" "<<rxdwn<<" "<<rx2dwn<<" "<<drx<<" "<<dry<<endl;
+		double d2rxds2 = (rxup+rxdwn-2*rx[i])/(ds*ds);
+		double d2ryds2 = (ry[up(i)]+ry[dwn(i)]-2*ry[i])/(ds*ds);
 
-		double norm = sqrt(drx*drx+dry*dry);
+		double norm = sqrt(drxds*drxds+dryds*dryds);
 
-		drx/=norm; dry/=norm;
+		drxds/=norm; dryds/=norm;
 
-		deltarx[i] =  - dt*v*dry/dx; //update with upwind scheme
-		deltary[i] =    dt*v*drx/dx;
+		deltarx[i] =  - dt*v*dryds + D*dt*d2rxds2;
+		deltary[i] =    dt*v*drxds + D*dt*d2ryds2;
 
 	}
 
 
 	for(int i=0;i<rx.size();i++) { //move the points
 
-		rx[i]+=deltarx[i]; //update with upwind scheme
+		rx[i]+=deltarx[i]; 
 		ry[i]+=deltary[i];
 	}
 
@@ -123,11 +125,10 @@ int main() {
 	init();
 	print(1000);
 
-	for (int i=0;i<5000;i++) {
+	for (int i=0;i<50000;i++) {
 		
 		timestep(i);
-		//if(i%100==0) print(i);
-		print(i);
+		if(i%100==0) print(i);
 		cout<<i<<" "<<rx.size()<<endl;
 	}
 
