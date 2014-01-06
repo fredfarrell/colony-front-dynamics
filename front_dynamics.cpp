@@ -129,7 +129,6 @@ int main() {
 		
 		timestep(i);
 		if(i%100==0) print(i);
-		cout<<i<<" "<<rx.size()<<endl;
 	}
 
 
