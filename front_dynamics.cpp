@@ -8,15 +8,16 @@
 #include"string.h"
 using namespace std;
 
-#define SIZE 1000
+#define SIZE 500
 #define SGN(x) (double)((x > 0) - (x < 0))
+#define SQR(x) x*x
 
 
 vector<double> rx,ry,deltarx,deltary;
 double dt=0.01;
 double ds=1.0;
 double v=-1.0;
-double D=10.0;
+double D=1.0;
 double ymin,ymax;
 
 
@@ -31,8 +32,11 @@ void init() {
 		//ry.push_back(0);
 
 		//CIRCLE
-		rx.push_back(cos(i*2*M_PI/1000.0));
-		ry.push_back(sin(i*2*M_PI/1000.0));
+		//rx.push_back( cos(i*i*2*M_PI/((double)SQR(SIZE))) );
+		//ry.push_back( sin(i*i*2*M_PI/((double)SQR(SIZE))) );
+
+		rx.push_back( cos(i*2*M_PI/((double)SIZE)) );
+		ry.push_back( sin(i*2*M_PI/((double)SIZE)) );
 
 		deltarx.push_back(0);
 		deltary.push_back(0);		
@@ -61,6 +65,19 @@ void print(int j) {
 
 }
 
+//functions to calculate i+1 and i-1 with PBCs
+int up(int x) {
+
+	if(x==rx.size()-1) return 0;
+	else return x+1;
+}
+
+int dwn(int x) {
+
+	if(x==0) return rx.size()-1;
+	else return x-1;
+
+}
 
 
 void timestep(int tm) {
@@ -101,14 +118,12 @@ int main() {
 	init();
 	print(1000);
 
-	for (int i=0;i<5000;i++) {
+	for (int i=0;i<500;i++) {
 		
 		timestep(i);
 		//if(i%100==0) print(i);
 		print(i);
-		cout<<i<<" "<<rx.size()<<endl;
 	}
-
 
 	print(2000);
 
