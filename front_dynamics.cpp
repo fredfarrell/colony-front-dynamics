@@ -14,10 +14,10 @@ using namespace std;
 
 
 vector<double> rx,ry,deltarx,deltary;
-double dt=0.01;
+double dt=0.002;
 double ds=1.0;
-double v=-1.0;
-double D=1.0;
+double v0=-1.0;
+double D=0.01;
 double ymin,ymax;
 
 
@@ -45,6 +45,12 @@ void init() {
 		ymax=100;
 
 	}
+
+}
+
+double v(int x) {
+
+	return -(1 + 0.5*sin( 10*2*M_PI*x/((double)SIZE) ) );
 
 }
 
@@ -86,8 +92,15 @@ void timestep(int tm) {
 	for(int i=0;i<rx.size();i++) {
 
 
-		double drxds = (2*rx[up(i)] + 3*rx[i] - 6*rx[dwn(i)] + rx[dwn(dwn(i))])/(6.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
-		double dryds = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/(6.0*ds); 
+		//double drxds = (2*rx[up(i)] + 3*rx[i] - 6*rx[dwn(i)] + rx[dwn(dwn(i))])/(6.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
+		//double dryds = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/(6.0*ds); 
+
+		double drxds = (rx[up(i)] - rx[dwn(i)] )/(2.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
+		double dryds = (ry[up(i)] - ry[dwn(i)] )/(2.0*ds); 
+
+
+		//double dryds = (2*ry[up(i)] + 3*ry[i] - 6*ry[dwn(i)] + ry[dwn(dwn(i))])/(6.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
+		//double drxds = (-rx[up(up(i))] + 6*rx[up(i)] - 3*rx[i] - 2*rx[dwn(i)])/(6.0*ds); 
 
 		double d2rxds2 = (rx[up(i)]+rx[dwn(i)]-2*rx[i])/(ds*ds);
 		double d2ryds2 = (ry[up(i)]+ry[dwn(i)]-2*ry[i])/(ds*ds);
@@ -96,8 +109,8 @@ void timestep(int tm) {
 
 		drxds/=norm; dryds/=norm;
 
-		deltarx[i] =  - dt*v*dryds + D*dt*d2rxds2;
-		deltary[i] =    dt*v*drxds + D*dt*d2ryds2;
+		deltarx[i] = - dt*dryds * v(i) + D*dt*d2rxds2;
+		deltary[i] =   dt*drxds * v(i) + D*dt*d2ryds2;
 
 	}
 
@@ -118,8 +131,8 @@ int main() {
 	init();
 	print(1000);
 
-	for (int i=0;i<500;i++) {
-		
+	for (int i=0;i<2500;i++) {
+		cout<<i<<endl;
 		timestep(i);
 		//if(i%100==0) print(i);
 		print(i);
