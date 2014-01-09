@@ -16,7 +16,7 @@ vector<double> rx,ry,deltarx,deltary;
 double dt=0.01;
 double ds=1.0;
 double v=1.0;
-double D=1.0;
+double D=0.0;
 double ymin,ymax;
 
 
@@ -87,8 +87,8 @@ void timestep(int tm) {
 		//rx2up=(rx[up(up(i))]-rx[i]<-SIZE*0.5)?rx[up(up(i))]+SIZE:rx[up(up(i))];  not actually used
 		rx2dwn=(rx[dwn(dwn(i))]-rx[i]>SIZE*0.5)?rx[dwn(dwn(i))]-SIZE:rx[dwn(dwn(i))]; 
 
-		double drxds = (2*rxup + 3*rx[i] - 6*rxdwn + rx2dwn)/(6.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
-		double dryds = (-ry[up(up(i))] + 6*ry[up(i)] - 3*ry[i] - 2*ry[dwn(i)])/(6.0*ds); 
+		double drxds = (rxup - rxdwn)/(2.0*ds); //centred difference 
+		double dryds = (ry[up(i)] - ry[dwn(i)])/(2.0*ds); 
 
 		double d2rxds2 = (rxup+rxdwn-2*rx[i])/(ds*ds);
 		double d2ryds2 = (ry[up(i)]+ry[dwn(i)]-2*ry[i])/(ds*ds);
@@ -125,7 +125,7 @@ int main() {
 	init();
 	print(1000);
 
-	for (int i=0;i<50000;i++) {
+	for (int i=0;i<5000;i++) {
 		
 		timestep(i);
 		if(i%100==0) print(i);
