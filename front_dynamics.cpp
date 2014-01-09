@@ -17,10 +17,10 @@ vector<double> rx,ry,deltarx,deltary;
 double dt=0.01;
 double ds=1.0;
 double v0=-1.0;
-double D=0.0;
+double D=0.01;
 double ymin,ymax;
 
-
+double cutoff=1e-4;
 
 void init() {
 
@@ -47,7 +47,7 @@ void init() {
 
 double v(int x) {
 
-	return -(1 + 0.5*sin( 2*M_PI*x/((double)SIZE) ) );
+	return -(1 + 0.5*sin( 2*M_PI*x/((double)rx.size()) ) );
 
 }
 
@@ -68,6 +68,7 @@ void print(int j) {
 
 }
 
+
 //functions to calculate i+1 and i-1 with PBCs
 int up(int x) {
 
@@ -82,13 +83,29 @@ int dwn(int x) {
 
 }
 
+void removeCloseTogetherPoints() {
+
+	for(int i=0;i<rx.size();i++) {
+
+		double distsq = (rx[up(i)]-rx[i])*(rx[up(i)]-rx[i]) + (ry[up(i)]-ry[i])*(ry[up(i)]-ry[i]);
+
+		if(distsq<cutoff) { //delete the point i fron the rx,ry vectors
+			rx.erase(rx.begin()+i);
+			ry.erase(ry.begin()+i);
+		}
+
+
+	}
+
+}
+
 
 void timestep(int tm) {
 
 
 	for(int i=0;i<rx.size();i++) {
 
-		double drxds = (rx[up(i)] - rx[dwn(i)] )/(2.0*ds); //3rd order upwind scheme w/ different sign for the two dimensions
+		double drxds = (rx[up(i)] - rx[dwn(i)] )/(2.0*ds); //centred difference update for the x derivs
 		double dryds = (ry[up(i)] - ry[dwn(i)] )/(2.0*ds); 
 
 		double d2rxds2 = (rx[up(i)]+rx[dwn(i)]-2*rx[i])/(ds*ds);
@@ -122,6 +139,7 @@ int main() {
 
 	for (int i=0;i<2500;i++) {
 		timestep(i);
+		removeCloseTogetherPoints();
 		//if(i%100==0) print(i);
 		print(i);
 	}
