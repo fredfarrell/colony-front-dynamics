@@ -14,10 +14,10 @@ using namespace std;
 
 
 vector<double> rx,ry,deltarx,deltary;
-double dt=0.002;
+double dt=0.01;
 double ds=1.0;
 double v0=-1.0;
-double D=0.01;
+double D=0.0;
 double ymin,ymax;
 
 
@@ -47,7 +47,7 @@ void init() {
 
 double v(int x) {
 
-	return -(1 + 0.5*sin( 10*2*M_PI*x/((double)SIZE) ) );
+	return -(1 + 0.5*sin( 2*M_PI*x/((double)SIZE) ) );
 
 }
 
