@@ -50,17 +50,17 @@ int dwn(int x) {
 
 void timestep() {
 
-	for(int i=1;i<SIZE-1;i++) {
+	for(int i=0;i<SIZE;i++) {
 		for(int j=1;j<SIZE-1;j++) {
 	
 			double dphidx = (phi[up(i)][j]-phi[dwn(i)][j])/(2*dx);
-			double dphidy = (phi[i][up(j)]-phi[i][dwn(j)])/(2*dx);
+			double dphidy = (phi[i][j+1]-phi[i][j-1])/(2*dx);
 
 			dphi[i][j] = -dt*v*sqrt(dphidx*dphidx+dphidy*dphidy);
 	
 	}}
 
-	for(int i=1;i<SIZE-1;i++) {
+	for(int i=0;i<SIZE;i++) {
 		for(int j=1;j<SIZE-1;j++) {
 	
 			phi[i][j]+=dphi[i][j];		
@@ -90,7 +90,7 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<100;i++) {
+	for(int i=0;i<1000;i++) {
 		
 		timestep();
 	
