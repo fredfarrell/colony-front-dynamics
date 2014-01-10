@@ -28,7 +28,7 @@ void init() {
 	for(int i=0;i<SIZE;i++) {
 		for(int j=0;j<SIZE;j++) {
 
-		phi[i][j]=tanh((j-SIZE/2)/10.0);
+		phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
 
 	}}
 
