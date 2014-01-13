@@ -17,6 +17,7 @@ double **phi,**dphi;
 double dt=0.01;
 double dx=0.1;
 double v=1.0;
+double D=0.01;
 
 int totalshift=0;
 
@@ -60,7 +61,10 @@ void timestep() {
 			double dphidx = (phi[up(i)][j]-phi[dwn(i)][j])/(2*dx); //use FTCS scheme
 			double dphidy = (phi[i][j+1]-phi[i][j-1])/(2*dx);
 
-			dphi[i][j] = -dt*v*sqrt(dphidx*dphidx+dphidy*dphidy);
+            double d2phidx2 = (phi[up(i)][j]+phi[dwn(i)][j]-2*phi[i][j])/(dx*dx);  
+            double d2phidy2 = (phi[i][j+1]+phi[i][j-1]-2*phi[i][j])/(dx*dx);
+
+			dphi[i][j] = -dt*v*sqrt(dphidx*dphidx+dphidy*dphidy) + D*dt*(d2phidx2+d2phidy2);
 	
 	}}
 
@@ -71,6 +75,21 @@ void timestep() {
 
 	}}
 	
+}
+
+void printgrid(int t) {
+
+	char str[30];
+	sprintf(str,"out%i.dat",t);
+	ofstream outp(str);
+
+	for(int i=1;i<SIZE-1;i++) {
+		for(int j=1;j<SIZE-1;j++) {
+
+			outp<<i<<" "<<j<<" "<<phi[i][j]<<endl;
+
+	}outp<<endl;}
+
 }
 
 void shiftEverythingDown() { //shift everything to keep the interface roughly centred in the simulation
@@ -89,36 +108,50 @@ void shiftEverythingDown() { //shift everything to keep the interface roughly ce
     
     int shift = ymin-buffer;
     
-    if(shift<0) {
-        cout<<"Error: hitting bottom of sim box!"<<endl;
+    /*if(shift<0) {
+	printgrid(3);
+        cout<<"Error: hitting bottom of sim box!" <<ymin<<endl;
         exit(0);
+    }*/
+
+    if(shift>0) {            
+	    for(int i=0;i<SIZE;i++) {
+		for(int j=0;j<SIZE;j++) {
+		    
+		    int x=j+shift;
+		    if(x>=SIZE) dphi[i][j]=1;
+		    else dphi[i][j]=phi[i][x];
+	    
+		}
+	    }
+     }
+
+    else if(shift<0) {
+
+    	for(int i=0;i<SIZE;i++) {
+		for(int j=0;j<SIZE;j++) {
+		    
+		    int x=j+shift;
+		    if(x<0) dphi[i][j]=-1;
+		    else dphi[i][j]=phi[i][x];
+	    
+		}
+	    }
+
     }
-            
+
+    else return;
+
     for(int i=0;i<SIZE;i++) {
-        for(int j=0;j<SIZE;j++) {
-            
-            int x=j+shift;
-            if(x>=SIZE) phi[i][j]=1;
-            else phi[i][j]=phi[i][j+shift];
+	    for(int j=0;j<SIZE;j++) {
+		    
+                phi[i][j]=dphi[i][j]; //using dphi as a temp array to update grid simultaneously
+	    
+	    }
+	}
+
+
     
-        }
-    }
-    
-}
-
-void printgrid(int t) {
-
-	char str[30];
-	sprintf(str,"out%i.dat",t);
-	ofstream outp(str);
-
-	for(int i=1;i<SIZE-1;i++) {
-		for(int j=1;j<SIZE-1;j++) {
-
-			outp<<i<<" "<<j<<" "<<phi[i][j]<<endl;
-
-	}outp<<endl;}
-
 }
 
 int main() {
@@ -126,15 +159,16 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<900;i++) {
+	for(int i=0;i<11001;i++) {
 		
 		cout<<i<<endl;
 		timestep();
 		shiftEverythingDown();
+
+        if(i%1000==0) printgrid(i);
 	
 	}
 
-	printgrid(2);
 
 	return 0;
 
