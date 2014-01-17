@@ -14,15 +14,28 @@ using namespace std;
 #define SIZEX 500
 #define SIZEY 500
 
+
 double **phi,**dphi, **p, **dp; //phi is the total density, p the proportion of fitter mutants (phi=p+q, q not considered explicitly)
 double dt=0.001;
+double sqrtdt;
 double dx=0.1;
 double v=1.0;
-double D=1.0;
-double alpha_1=12.0;
+double D=1.0; //diffusion const
+double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
+double g=10.0; //noise strength
 
 int totalshift=0;
+
+// random number generator - like drand48() under Linux, but faster
+// works only with compilers which have long long int!
+long long int xdr48=0x000100010001LL, mndr48=0x0005deece66dLL, doddr48=0xbLL ;
+
+double _drand48(void)  
+{
+  xdr48=mndr48*xdr48+doddr48 ; xdr48&=0xffffffffffffLL ;
+  return (xdr48/281474976710656.0) ;
+}
 
 double f(int x) {
 
@@ -49,6 +62,7 @@ void init() {
 
 	}}
 
+    sqrtdt=sqrt(dt);
 }
 
 int up(int x) { //functions for PBCs
@@ -79,7 +93,8 @@ void timestep() {
 
 			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*p[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
 
-            dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2);
+            dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
+
 
 	}}
 
@@ -88,6 +103,9 @@ void timestep() {
 	
 			phi[i][j]+=dphi[i][j];	
             p[i][j]+=dp[i][j];	
+
+            if(p[i][j]<0) p[i][j]=0;
+            if(p[i][j]>phi[i][j]) p[i][j]=phi[i][j];
 
 	}}
 
@@ -182,16 +200,17 @@ void shiftEverythingDown() { //shift everything to keep the interface roughly ce
     
 }
 
+
 int main() {
 
 	init();
 	printgrid(1);
 
-	for(int i=0;i<20001;i++) {
+	for(int i=0;i<3001;i++) {
 		
 		cout<<i<<endl;
 		timestep();
-		shiftEverythingDown();
+		//shiftEverythingDown();
 
         if(i%1000==0) printgrid(i);
 	
