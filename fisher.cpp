@@ -21,9 +21,9 @@ double sqrtdt;
 double dx=0.1;
 double v=1.0;
 double D=1.0; //diffusion const
-double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
+double alpha_1=10.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
-double g=10.0; //noise strength
+double g=0.0; //noise strength
 
 int totalshift=0;
 
@@ -200,17 +200,31 @@ void shiftEverythingDown() { //shift everything to keep the interface roughly ce
     
 }
 
+int mutantMaxPosition() {
+
+    int maxpos=0;
+
+    for(int i=0;i<SIZEX;i++) {
+        for(int j=0;j<SIZEY;j++) {
+            if(p[i][j]>0.01 && i>maxpos) maxpos=i;
+        }
+    }
+
+    return maxpos;
+
+}
+
 
 int main() {
 
 	init();
 	printgrid(1);
 
-	for(int i=0;i<3001;i++) {
+	for(int i=0;i<20001;i++) {
 		
-		cout<<i<<endl;
+		cout<<i<<" "<<mutantMaxPosition()<<endl;
 		timestep();
-		//shiftEverythingDown();
+		shiftEverythingDown();
 
         if(i%1000==0) printgrid(i);
 	
