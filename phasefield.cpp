@@ -21,6 +21,13 @@ double D=0.01;
 
 int totalshift=0;
 
+double f(int x) {
+
+    if(x>100 && x<400) return 5*exp( -(x-250)*(x-250)/500.0 );
+	else return 0;
+
+}
+
 void init() {
 
 	phi = new double*[SIZE]; dphi = new double*[SIZE]; 
@@ -33,7 +40,8 @@ void init() {
 	for(int i=0;i<SIZE;i++) {
 		for(int j=0;j<SIZE;j++) {
 
-		phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
+		//phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
+        phi[i][j]=tanh( (j-SIZE/4)/10.0 - f(i))  ;
 
 	}}
 
@@ -159,13 +167,13 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<11001;i++) {
+	for(int i=0;i<3000;i++) {
 		
 		cout<<i<<endl;
 		timestep();
-		shiftEverythingDown();
+		//shiftEverythingDown();
 
-        if(i%1000==0) printgrid(i);
+        if(i%100==0) printgrid(i);
 	
 	}
 
