@@ -18,12 +18,12 @@ using namespace std;
 double **phi,**dphi, **p, **dp; //phi is the total density, p the proportion of fitter mutants (phi=p+q, q not considered explicitly)
 double dt=0.001;
 double sqrtdt;
-double dx=0.1;
+double dx=0.1; 
 double v=1.0;
 double D=1.0; //diffusion const
-double alpha_1=10.0; //growth rates (alpha_1>alpha_2)
+double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
-double g=0.0; //noise strength
+double g=0.1; //noise strength
 
 int totalshift=0;
 
@@ -59,6 +59,7 @@ void init() {
 		//phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
         phi[i][j]=0.5*tanh( (SIZEY/4-j)/10.0) + 0.5 ;
         p[i][j]=(0.5*tanh( (SIZEY/4-j)/10.0) + 0.5) * exp (-(i-SIZEX/2)*(i-SIZEX/2)/100.0) ;
+        if(i<225 || i>270) p[i][j]=0;
 
 	}}
 
@@ -93,9 +94,9 @@ void timestep() {
 
 			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*p[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
 
-            dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
-
-
+             dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*sqrt(p[i][j]*(phi[i][j]-p[i][j]))*(_drand48()-0.5);
+            //dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
+           
 	}}
 
 	for(int i=0;i<SIZEX;i++) {
@@ -214,17 +215,45 @@ int mutantMaxPosition() {
 
 }
 
+double integratedMutantNumber() {
+
+    double total=0;
+
+    for(int i=0;i<SIZEX;i++) {
+        for(int j=0;j<SIZEY;j++) {
+            total += p[i][j];       
+        }
+    }
+
+    return total/((double)(SIZEX*SIZEY));
+
+}
+
+double integratedTotal() {
+
+    double total=0;
+
+    for(int i=0;i<SIZEX;i++) {
+        for(int j=0;j<SIZEY;j++) {
+            total += phi[i][j];       
+        }
+    }
+
+    return total/((double)(SIZEX*SIZEY));
+
+}
+
 
 int main() {
 
 	init();
 	printgrid(1);
 
-	for(int i=0;i<20001;i++) {
+	for(int i=0;i<50000;i++) {
 		
-		cout<<i<<" "<<mutantMaxPosition()<<endl;
+		cout<<i<<" "<<mutantMaxPosition()<<" "<<integratedMutantNumber()<<" "<<integratedTotal()<<endl;
 		timestep();
-		shiftEverythingDown();
+		//shiftEverythingDown();
 
         if(i%1000==0) printgrid(i);
 	
