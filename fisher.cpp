@@ -11,8 +11,8 @@
 using namespace std;
 
 
-#define SIZEX 500
-#define SIZEY 500
+#define SIZEX 250
+#define SIZEY 250
 
 
 double **phi,**dphi; //phi is the total density, phi_1 the proportion of fitter mutants (phi=phi_1+phi_2, q not considered explicitly)
@@ -25,10 +25,10 @@ double v=1.0;
 double D=1.0; //diffusion const
 double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
-double g=0.1; //noise strength
+double g=0.0; //noise strength
 
-double pmin = log(g*dt)*log(g*dt)*g*dt/9.0; //need to make sure that the maximum noise per time step is less than pmin
-double noisemax = fabs(log(g*dt))/3.0;
+double pmin = 0.0001; // log(g*dt)*log(g*dt)*g*dt/9.0; //need to make sure that the maximum noise per time step is less than pmin
+double noisemax = 1.0; // fabs(log(g*dt))/3.0;
 
 int totalshift=0;
 
@@ -99,8 +99,8 @@ void timestep() {
 
 			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*pmin*n[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
 
-             dp[i][j] = dt*alpha_1*pmin*n[i][j]*(1-pmin*n[i][j]) + D*dt*(d2pdx2+d2pdy2) + sqrtdt*g*sqrt(pmin*n[i][j]*(phi[i][j]-pmin*n[i][j])) * 2*noisemax*(_drand48()-0.5);
-            //dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
+            dp[i][j] = dt*alpha_1*pmin*n[i][j]*(1-pmin*n[i][j]) + D*dt*(d2pdx2+d2pdy2) + sqrtdt*g*sqrt(pmin*n[i][j]*(phi[i][j]-pmin*n[i][j])) * 2*noisemax*(_drand48()-0.5);
+
            
 	}}
 
@@ -125,7 +125,9 @@ void timestep() {
 			phi[i][0]=phi[i][1];
             phi[i][SIZEY-1]=phi[i][SIZEY-2];		
 			p[i][0]=p[i][1];
-            p[i][SIZEY-1]=p[i][SIZEY-2];	
+            p[i][SIZEY-1]=p[i][SIZEY-2];
+            n[i][0]=n[i][1];
+            n[i][SIZEY-1]=n[i][1];	
 
 	}
 
