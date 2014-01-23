@@ -15,7 +15,9 @@ using namespace std;
 #define SIZEY 500
 
 
-double **phi,**dphi, **p, **dp; //phi is the total density, p the proportion of fitter mutants (phi=p+q, q not considered explicitly)
+double **phi,**dphi; //phi is the total density, phi_1 the proportion of fitter mutants (phi=phi_1+phi_2, q not considered explicitly)
+int **n; //n is the discretized version of phi_1 to deal with noise truncaton near 0; p = pmin*n
+double **p, **dp; //continuous variable to keep track of changes to n
 double dt=0.001;
 double sqrtdt;
 double dx=0.1; 
@@ -24,6 +26,9 @@ double D=1.0; //diffusion const
 double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
 double g=0.1; //noise strength
+
+double pmin = log(g*dt)*log(g*dt)*g*dt/9.0; //need to make sure that the maximum noise per time step is less than pmin
+double noisemax = fabs(log(g*dt))/3.0;
 
 int totalshift=0;
 
@@ -46,10 +51,10 @@ double f(int x) {
 
 void init() {
 
-	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX];
+	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX]; n = new int*[SIZEX];
 
 	for(int i=0;i<SIZEX; i++) {
-		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY];
+		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY]; n[i] = new int[SIZEY];
 	}
 
 
@@ -58,8 +63,8 @@ void init() {
 
 		//phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
         phi[i][j]=0.5*tanh( (SIZEY/4-j)/10.0) + 0.5 ;
-        p[i][j]=(0.5*tanh( (SIZEY/4-j)/10.0) + 0.5) * exp (-(i-SIZEX/2)*(i-SIZEX/2)/100.0) ;
-        if(i<225 || i>270) p[i][j]=0;
+        n[i][j]=(0.5*tanh( (SIZEY/4-j)/10.0) + 0.5) * exp (-(i-SIZEX/2)*(i-SIZEX/2)/100.0)/pmin;
+        p[i][j]=0;
 
 	}}
 
@@ -89,12 +94,12 @@ void timestep() {
 
             double d2phidx2 = (phi[up(i)][j]+phi[dwn(i)][j]-2*phi[i][j])/(dx*dx);  
             double d2phidy2 = (phi[i][j+1]+phi[i][j-1]-2*phi[i][j])/(dx*dx);
-            double d2pdx2 = (p[up(i)][j]+p[dwn(i)][j]-2*p[i][j])/(dx*dx);  
-            double d2pdy2 = (p[i][j+1]+p[i][j-1]-2*p[i][j])/(dx*dx);
+            double d2pdx2 = (pmin*n[up(i)][j]+pmin*n[dwn(i)][j]-2*pmin*n[i][j])/(dx*dx);  
+            double d2pdy2 = (pmin*n[i][j+1]+pmin*n[i][j-1]-2*pmin*n[i][j])/(dx*dx);
 
-			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*p[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
+			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*pmin*n[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
 
-             dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*sqrt(p[i][j]*(phi[i][j]-p[i][j]))*(_drand48()-0.5);
+             dp[i][j] = dt*alpha_1*pmin*n[i][j]*(1-pmin*n[i][j]) + D*dt*(d2pdx2+d2pdy2) + sqrtdt*g*sqrt(pmin*n[i][j]*(phi[i][j]-pmin*n[i][j])) * 2*noisemax*(_drand48()-0.5);
             //dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
            
 	}}
@@ -104,6 +109,9 @@ void timestep() {
 	
 			phi[i][j]+=dphi[i][j];	
             p[i][j]+=dp[i][j];	
+
+            if(p[i][j]>=pmin) {n[i][j]++; p[i][j]=0;}
+            if(p[i][j]<=-pmin) {n[i][j]--; p[i][j]=0;}
 
             if(p[i][j]<0) p[i][j]=0;
             if(p[i][j]>phi[i][j]) p[i][j]=phi[i][j];
@@ -132,7 +140,7 @@ void printgrid(int t) {
 	for(int i=1;i<SIZEX-1;i++) {
 		for(int j=1;j<SIZEY-1;j++) {
 
-			outp<<i<<" "<<j<<" "<<phi[i][j]<<" "<<p[i][j]<<endl;
+			outp<<i<<" "<<j<<" "<<phi[i][j]<<" "<<n[i][j]<<" "<<n[i][j]*pmin<<" "<<p[i][j]<<endl;
 
 	}outp<<endl;}
 
@@ -207,7 +215,7 @@ int mutantMaxPosition() {
 
     for(int i=0;i<SIZEX;i++) {
         for(int j=0;j<SIZEY;j++) {
-            if(p[i][j]>0.01 && i>maxpos) maxpos=i;
+            if(n[i][j]>1 && i>maxpos) maxpos=i;
         }
     }
 
@@ -221,7 +229,7 @@ double integratedMutantNumber() {
 
     for(int i=0;i<SIZEX;i++) {
         for(int j=0;j<SIZEY;j++) {
-            total += p[i][j];       
+            total += n[i][j];       
         }
     }
 
@@ -249,13 +257,15 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<50000;i++) {
+    cout<<pmin<<" "<<noisemax<<endl;
+
+	for(int i=0;i<2001;i++) {
 		
 		cout<<i<<" "<<mutantMaxPosition()<<" "<<integratedMutantNumber()<<" "<<integratedTotal()<<endl;
 		timestep();
 		//shiftEverythingDown();
 
-        if(i%1000==0) printgrid(i);
+        if(i%100==0) printgrid(i);
 	
 	}
 
