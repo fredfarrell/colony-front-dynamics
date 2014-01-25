@@ -15,7 +15,8 @@ using namespace std;
 #define SIZEY 500
 
 
-double **phi,**dphi, **p, **dp; //phi is the total density, p the proportion of fitter mutants (phi=p+q, q not considered explicitly)
+int **n, **m; //(discretized) fields
+double **phi,**dphi, **p, **dp; //continuous variables to keep track of small changes to m,n resp.
 double dt=0.001;
 double sqrtdt;
 double dx=0.1; 
@@ -23,7 +24,9 @@ double v=1.0;
 double D=1.0; //diffusion const
 double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
 double alpha_2=10.0;
-double g=0.1; //noise strength
+double g=0.0; //noise strength
+
+double pmin=0.0001;
 
 int totalshift=0;
 
@@ -46,10 +49,10 @@ double f(int x) {
 
 void init() {
 
-	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX];
+	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX]; n = new int*[SIZEX]; m = new int *[SIZEX];
 
 	for(int i=0;i<SIZEX; i++) {
-		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY];
+		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY]; n[i] = new int[SIZEY]; m[i] = new int[SIZEY];
 	}
 
 
@@ -57,9 +60,10 @@ void init() {
 		for(int j=0;j<SIZEY;j++) {
 
 		//phi[i][j]=tanh( (j-SIZE/2)/10.0 - 5*sin(i*2*M_PI/((double)SIZE)))  ;
-        phi[i][j]=0.5*tanh( (SIZEY/4-j)/10.0) + 0.5 ;
-        p[i][j]=(0.5*tanh( (SIZEY/4-j)/10.0) + 0.5) * exp (-(i-SIZEX/2)*(i-SIZEX/2)/100.0) ;
-        if(i<225 || i>270) p[i][j]=0;
+        m[i][j]=((0.5*tanh( (SIZEY/4-j)/10.0) + 0.5)/pmin);
+        n[i][j]=(((0.5*tanh( (SIZEY/4-j)/10.0) + 0.5) * exp (-(i-SIZEX/2)*(i-SIZEX/2)/100.0))/pmin);
+        p[i][j]=0;
+        phi[i][j]=0;
 
 	}}
 
@@ -82,19 +86,29 @@ int dwn(int x) {
 
 void timestep() {
 
-
+	/*for(int i=0;i<SIZEX;i++) {
+		for(int j=0;j<SIZEY;j++) {
+            n[i][j]=p[i][j]/pmin;
+            m[i][j]=phi[i][j]/pmin;
+        }
+    }*/
 
 	for(int i=0;i<SIZEX;i++) {
 		for(int j=1;j<SIZEY-1;j++) {
 
-            double d2phidx2 = (phi[up(i)][j]+phi[dwn(i)][j]-2*phi[i][j])/(dx*dx);  
-            double d2phidy2 = (phi[i][j+1]+phi[i][j-1]-2*phi[i][j])/(dx*dx);
-            double d2pdx2 = (p[up(i)][j]+p[dwn(i)][j]-2*p[i][j])/(dx*dx);  
-            double d2pdy2 = (p[i][j+1]+p[i][j-1]-2*p[i][j])/(dx*dx);
 
-			dphi[i][j] = dt*alpha_2*phi[i][j]*(1-phi[i][j]) + dt*(alpha_1-alpha_2)*p[i][j]*(1-phi[i][j]) + D*dt*(d2phidx2+d2phidy2);
+            double d2mdx2 = (m[up(i)][j]+m[dwn(i)][j]-2*m[i][j])/(dx*dx); 
+            double d2mdy2 = (m[i][j+1]+m[i][j-1]-2*m[i][j])/(dx*dx);
+            double d2ndx2 = (n[up(i)][j]+n[dwn(i)][j]-2*n[i][j])/(dx*dx);  
+            double d2ndy2 = (n[i][j+1]+n[i][j-1]-2*n[i][j])/(dx*dx);
 
-             dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*sqrt(p[i][j]*(phi[i][j]-p[i][j]))*(_drand48()-0.5);
+			dphi[i][j] = dt*alpha_2*m[i][j]*(1-pmin*m[i][j]) + dt*(alpha_1-alpha_2)*n[i][j]*(1-pmin*m[i][j]) + D*dt*(d2mdx2+d2mdy2);
+
+            dp[i][j] = dt*alpha_1*n[i][j]*(1-pmin*m[i][j]) + D*dt*(d2ndx2+d2ndy2);// + 2*sqrtdt*g*pmin*sqrt(n[i][j]*(m[i][j]-n[i][j]))*(_drand48()-0.5);
+            
+            if(isnan(dp[i][j])) cout<<i<<" "<<j<<" "<<m[i][j]<<" "<<n[i][j]<<endl;
+
+            //if( isnan(dp[i][j]) ){ cout<<"TEST: "<<p[i][j]<<" "<<n[i][j]<<" "<<pmin*n[i][j]<<" "<<dt*alpha_1*pmin*n[i][j]*(1-phi[i][j])<<" "<<D*dt*(d2pdx2+d2pdy2)<<" "<<2*sqrtdt*g*sqrt(pmin*n[i][j]*(phi[i][j]-pmin*n[i][j]))*(_drand48()-0.5)<<" "<<pmin*n[i][j]*(phi[i][j]-pmin*n[i][j])<<" "<<p[i][j]*(phi[i][j]-p[i][j])<<endl; }
             //dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
            
 	}}
@@ -105,8 +119,16 @@ void timestep() {
 			phi[i][j]+=dphi[i][j];	
             p[i][j]+=dp[i][j];	
 
-            if(p[i][j]<0) p[i][j]=0;
-            if(p[i][j]>phi[i][j]) p[i][j]=phi[i][j];
+            m[i][j] = m[i][j] + (int)phi[i][j];
+            n[i][j] = n[i][j] + (int)p[i][j];
+            phi[i][j] = phi[i][j] - (int)phi[i][j];
+            p[i][j] = p[i][j] - (int)p[i][j];
+
+           // n[i][j]+=dp[i][j];
+           // m[i][j]+=dphi[i][j];
+
+            //if(n[i][j]<0) n[i][j]=0;
+            //if(n[i][j]>m[i][j]) n[i][j]=m[i][j];
 
 	}}
 
@@ -126,13 +148,13 @@ void timestep() {
 void printgrid(int t) {
 
 	char str[30];
-	sprintf(str,"out%i.dat",t);
+	sprintf(str,"out%i.dat3",t);
 	ofstream outp(str);
 
 	for(int i=1;i<SIZEX-1;i++) {
 		for(int j=1;j<SIZEY-1;j++) {
 
-			outp<<i<<" "<<j<<" "<<phi[i][j]<<" "<<p[i][j]<<endl;
+			outp<<i<<" "<<j<<" "<<phi[i][j]<<" "<<p[i][j]<<" "<<m[i][j]<<" "<<n[i][j]<<endl;
 
 	}outp<<endl;}
 
@@ -249,14 +271,17 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<50000;i++) {
-		
+	for(int i=0;i<5001;i++) {
+
 		cout<<i<<" "<<mutantMaxPosition()<<" "<<integratedMutantNumber()<<" "<<integratedTotal()<<endl;
+
 		timestep();
 		//shiftEverythingDown();
 
         if(i%1000==0) printgrid(i);
-	
+
+        //printgrid(i);
+
 	}
 
 
