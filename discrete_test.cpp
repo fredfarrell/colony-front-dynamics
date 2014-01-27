@@ -35,7 +35,8 @@ int main() {
         
         for(int i=0;i<1000;i++) {
             
-            dpsi[i] = R * pmin (n[i+1]+n[i-1]-2*n[i]);
+            dpsi[i] = R * pmin * (n[i+1]+n[i-1]-2*n[i]);
+            cout<<dpsi[i]<<endl;
         
         }
 

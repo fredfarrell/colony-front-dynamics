@@ -15,18 +15,22 @@ using namespace std;
 #define SIZEY 500
 
 
-int **n, **m; //(discretized) fields
+long **n, **m; //(discretized) fields
 double **phi,**dphi, **p, **dp; //continuous variables to keep track of small changes to m,n resp.
 double dt=0.001;
 double sqrtdt;
 double dx=0.1; 
 double v=1.0;
 double D=1.0; //diffusion const
-double alpha_1=15.0; //growth rates (alpha_1>alpha_2)
-double alpha_2=10.0;
-double g=0.0; //noise strength
+double alpha_1=1.5; //growth rates (alpha_1>alpha_2)
+double alpha_2=1.0;
+double g=1.0; //noise strength
 
-double pmin=0.0001;
+double pmin=1e-3;
+double noisemax=1.0;
+
+//double pmin = (log(g*g*dt)*log(g*dt)*g*g*dt)/9000.0;
+//double noisemax = fabs(g*g*dt)/3.0;
 
 int totalshift=0;
 
@@ -49,10 +53,12 @@ double f(int x) {
 
 void init() {
 
-	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX]; n = new int*[SIZEX]; m = new int *[SIZEX];
+    cout<<pmin<<" "<<noisemax<<endl;
+
+	phi = new double*[SIZEX]; dphi = new double*[SIZEX]; p = new double*[SIZEX]; dp = new double*[SIZEX]; n = new long*[SIZEX]; m = new long *[SIZEX];
 
 	for(int i=0;i<SIZEX; i++) {
-		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY]; n[i] = new int[SIZEY]; m[i] = new int[SIZEY];
+		phi[i]=new double[SIZEY]; dphi[i]=new double[SIZEY]; p[i]=new double[SIZEY]; dp[i]=new double[SIZEY]; n[i] = new long[SIZEY]; m[i] = new long[SIZEY];
 	}
 
 
@@ -104,9 +110,11 @@ void timestep() {
 
 			dphi[i][j] = dt*alpha_2*m[i][j]*(1-pmin*m[i][j]) + dt*(alpha_1-alpha_2)*n[i][j]*(1-pmin*m[i][j]) + D*dt*(d2mdx2+d2mdy2);
 
-            dp[i][j] = dt*alpha_1*n[i][j]*(1-pmin*m[i][j]) + D*dt*(d2ndx2+d2ndy2);// + 2*sqrtdt*g*pmin*sqrt(n[i][j]*(m[i][j]-n[i][j]))*(_drand48()-0.5);
+            cout<<dphi[i][j]<<endl;
+
+            dp[i][j] = dt*alpha_1*n[i][j]*(1-pmin*m[i][j]) + D*dt*(d2ndx2+d2ndy2);// + sqrtdt*g*sqrt(n[i][j]*(m[i][j]-n[i][j])) * noisemax*2*(_drand48()-0.5);
             
-            if(isnan(dp[i][j])) cout<<i<<" "<<j<<" "<<m[i][j]<<" "<<n[i][j]<<endl;
+            if(isnan(dp[i][j])) cout<<"NAN! "<<i<<" "<<j<<" "<<m[i][j]<<" "<<n[i][j]<<" "<<sqrtdt*g*sqrt(n[i][j]*(m[i][j]-n[i][j])) * noisemax*2*(_drand48()-0.5)<<" "<<n[i][j]*(m[i][j]-n[i][j])<<endl;
 
             //if( isnan(dp[i][j]) ){ cout<<"TEST: "<<p[i][j]<<" "<<n[i][j]<<" "<<pmin*n[i][j]<<" "<<dt*alpha_1*pmin*n[i][j]*(1-phi[i][j])<<" "<<D*dt*(d2pdx2+d2pdy2)<<" "<<2*sqrtdt*g*sqrt(pmin*n[i][j]*(phi[i][j]-pmin*n[i][j]))*(_drand48()-0.5)<<" "<<pmin*n[i][j]*(phi[i][j]-pmin*n[i][j])<<" "<<p[i][j]*(phi[i][j]-p[i][j])<<endl; }
             //dp[i][j] = dt*alpha_1*p[i][j]*(1-phi[i][j]) + D*dt*(d2pdx2+d2pdy2) + 2*sqrtdt*g*p[i][j]*(phi[i][j]-p[i][j])*(_drand48()-0.5);
@@ -124,11 +132,11 @@ void timestep() {
             phi[i][j] = phi[i][j] - (int)phi[i][j];
             p[i][j] = p[i][j] - (int)p[i][j];
 
-           // n[i][j]+=dp[i][j];
-           // m[i][j]+=dphi[i][j];
+            //n[i][j]+=dp[i][j];
+            //m[i][j]+=dphi[i][j];
 
             //if(n[i][j]<0) n[i][j]=0;
-            //if(n[i][j]>m[i][j]) n[i][j]=m[i][j];
+            if(n[i][j]>m[i][j]) n[i][j]=m[i][j];
 
 	}}
 
@@ -271,14 +279,14 @@ int main() {
 	init();
 	printgrid(1);
 
-	for(int i=0;i<5001;i++) {
+	for(int i=0;i<50001;i++) {
 
 		cout<<i<<" "<<mutantMaxPosition()<<" "<<integratedMutantNumber()<<" "<<integratedTotal()<<endl;
 
 		timestep();
 		//shiftEverythingDown();
 
-        if(i%1000==0) printgrid(i);
+        if(i%10000==0) printgrid(i);
 
         //printgrid(i);
 
