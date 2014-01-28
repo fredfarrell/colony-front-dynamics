@@ -7,7 +7,7 @@
 #include <math.h>
 #include <sstream>
 #include <vector>
-#include"string.h"
+#include "string.h"
 using namespace std;
 
 
@@ -291,7 +291,6 @@ int main() {
         //printgrid(i);
 
 	}
-
 
 	return 0;
 
