@@ -1,25 +1,26 @@
 !Code to solve the standard Fisher equation in two dimensions
-!Equation is d\phi/dt = alpha \phi (1-\phi) + D grad^2 \phi
+!Equation is dphi/dt = alpha phi (1-phi) + D grad^2 phi
 
 program fisher_standard
 
+    implicit none
 	integer, parameter :: SIZE=250
 	real(8) :: phi(SIZE,SIZE), dphi(SIZE,SIZE), temp(SIZE,SIZE)
 	real(8) :: D,dt,dx,alpha
 	integer :: i,j,t,maxt,iup,idwn
-	real(8)  :: totalshift
+	integer  :: totalshift
 
 	!parameters
 	D=1
 	alpha=1
 	dt=0.001
 	dx=0.1
-	maxt=5000
+	maxt=50000
 	totalshift=0
 
 	!initialize
-	do i = 1,SIZE
-		do j = 1,SIZE
+	do j = 1,SIZE
+		do i = 1,SIZE
 			phi(i,j)=0.5*tanh( (SIZE/4-j)/10.0) + 0.5
 		enddo
 	enddo
@@ -27,18 +28,10 @@ program fisher_standard
 	!timestep
 	do t = 1, maxt
 
-		if(t==1) then
-			call print_grid(1)
-		endif
-
-		if(t==1) then
-			call print_grid(2)
-		endif
-
 		write(6,*) t,totalshift
 
-		do i = 1,SIZE
-			do j=2, SIZE-1
+		do j = 2,SIZE-1
+			do i=1, SIZE
 
 				iup = merge(1,i+1,i==SIZE)
 				idwn = merge(SIZE,i-1,i==1)
@@ -50,14 +43,14 @@ program fisher_standard
 		enddo
 
 		!simulataneous update of phi array
-		do i = 1,SIZE
-			do j=2,SIZE-1
+		do j = 2,SIZE-1
+			do i=1,SIZE
 				phi(i,j) = phi(i,j) + dphi(i,j)
 			enddo
 		enddo
 
 		!zero flux BC in the j-direction
-		do i = 1,SIZE
+		do i = i,SIZE
 			phi(i,1)=phi(i,2)
 			phi(i,SIZE-1)=phi(i,SIZE)
 		enddo
@@ -67,7 +60,7 @@ program fisher_standard
 			call print_grid(t)
 		endif
 
-		call shift_everything()
+        call shift_everything()
 
 	enddo
 
@@ -75,13 +68,14 @@ contains
 
 	subroutine shift_everything() !shift all the fields so that the contour is roughly centred in the sim box
 
-		integer :: buffer,ymin
+		integer :: buffer,ymin,x,shift
 		real(8) :: tolerance
 
-		buffer = 100 !distance of contour from bottom of box
+		buffer = 150 !distance of contour from bottom of box
 		tolerance = 0.001
 
 		ymin=SIZE
+
 
 		do j = 1,SIZE
 			do i=1,SIZE
@@ -95,8 +89,8 @@ contains
 		totalshift = totalshift + shift
 
 		if (shift>0) then
-			do i = 1,SIZE
-				do j=1,SIZE
+			do j = 1,SIZE
+				do i=1,SIZE
 
 					x=j+shift
 					if(x>SIZE) then 
@@ -109,8 +103,8 @@ contains
 
 		else if(shift<0) then
 			
-			do i = 1,SIZE
-				do j=1,SIZE
+			do j = 1,SIZE
+				do i=1,SIZE
 
 					x=j+shift
 					if(x<=0) then 
@@ -121,10 +115,14 @@ contains
 				enddo 
 			enddo
 
+        else
+            return
+
 		endif
 
-		do i = 1,SIZE
-			do j=1,SIZE
+
+		do j = 1,SIZE
+			do i=1,SIZE
 				phi(i,j)=temp(i,j)
 			enddo
 		enddo
@@ -139,8 +137,8 @@ contains
 			write(filename,"(A7,I0,A4)") 'std_out',label, '.dat'
 			open(1,file=filename)
 
-			do i = 1,SIZE
-				do j=1,SIZE
+			do j = 1,SIZE
+				do i=1,SIZE
 					write(1,*) i,j,phi(i,j)
 				enddo
 				write(1,*)
