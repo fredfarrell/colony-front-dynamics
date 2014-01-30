@@ -1,18 +1,20 @@
-!Code to solve the standard Fisher equation in two dimensions
-!Equation is dphi/dt = alpha phi (1-phi) + D grad^2 phi
+!Code to solve a 2-component standard Fisher equation in two dimensions
+!Equations are dphi_i/dt = alpha_i phi_i (1-sum_i phi_i) + D grad^2 phi_i
+!i=1,2
 
 program fisher_standard
 
     implicit none
-	integer, parameter :: SIZE=250
-	real(8) :: phi(SIZE,SIZE), dphi(SIZE,SIZE), temp(SIZE,SIZE)
-	real(8) :: D,dt,dx,alpha
+	integer, parameter :: SIZE=500
+	real(8) :: phi_1(SIZE,SIZE), dphi_1(SIZE,SIZE), phi_2(SIZE,SIZE), dphi_2(SIZE,SIZE)
+	real(8) :: D,dt,dx,alpha_1,alpha_2
 	integer :: i,j,t,maxt,iup,idwn
 	integer  :: totalshift
 
 	!parameters
-	D=1
-	alpha=1
+	D=.1
+	alpha_1=1
+    alpha_2=1.5
 	dt=0.001
 	dx=0.1
 	maxt=50000
@@ -21,7 +23,8 @@ program fisher_standard
 	!initialize
 	do j = 1,SIZE
 		do i = 1,SIZE
-			phi(i,j)=0.5*tanh( (SIZE/4-j)/10.0) + 0.5
+			phi_2(i,j)=( (0.5*tanh( (SIZE/4-j)/10.0) + 0.5) * exp (-(i-SIZE/2)*(i-SIZE/2)/100.0) )
+			phi_1(i,j)=0.5*tanh( (SIZE/4-j)/10.0) + 0.5 - phi_2(i,j)
 		enddo
 	enddo
 
@@ -36,27 +39,33 @@ program fisher_standard
 				iup = merge(1,i+1,i==SIZE)
 				idwn = merge(SIZE,i-1,i==1)
 
-				!calculate change in phi over the timestep
-				dphi(i,j) = dt*alpha*phi(i,j)*(1-phi(i,j)) + (D*dt)/(dx*dx)*(phi(iup,j) + phi(idwn,j) + phi(i,j+1) + phi(i,j-1) - 4*phi(i,j))
+				!calculate change in phi_i over the timestep
+				dphi_1(i,j) = dt*alpha_1*phi_1(i,j)*(1-phi_1(i,j)-phi_2(i,j)) + (D*dt)/(dx*dx)*(phi_1(iup,j) + phi_1(idwn,j) &
+                 + phi_1(i,j+1) + phi_1(i,j-1) - 4*phi_1(i,j))
+				dphi_2(i,j) = dt*alpha_2*phi_2(i,j)*(1-phi_1(i,j)-phi_2(i,j)) + (D*dt)/(dx*dx)*(phi_2(iup,j) + phi_2(idwn,j) + &
+                 phi_2(i,j+1) + phi_2(i,j-1) - 4*phi_2(i,j))
 
 			enddo
 		enddo
 
-		!simulataneous update of phi array
+		!simulataneous update of arrays
 		do j = 2,SIZE-1
 			do i=1,SIZE
-				phi(i,j) = phi(i,j) + dphi(i,j)
+				phi_1(i,j) = phi_1(i,j) + dphi_1(i,j)
+				phi_2(i,j) = phi_2(i,j) + dphi_2(i,j)
 			enddo
 		enddo
 
 		!zero flux BC in the j-direction
-		do i = i,SIZE
-			phi(i,1)=phi(i,2)
-			phi(i,SIZE-1)=phi(i,SIZE)
+		do i = 1,SIZE
+			phi_1(i,1)=phi_1(i,2)
+			phi_1(i,SIZE-1)=phi_1(i,SIZE)
+			phi_2(i,1)=phi_2(i,2)
+			phi_2(i,SIZE-1)=phi_2(i,SIZE)
 		enddo
 
 		!print data every 1000 time steps
-		if(mod(t,1000)==0) then
+		if(mod(t,1000)==0 .or. t==1) then
 			call print_grid(t)
 		endif
 
@@ -79,7 +88,7 @@ contains
 
 		do j = 1,SIZE
 			do i=1,SIZE
-				if(phi(i,j)<=tolerance .and. j<ymin) then 
+				if(phi_1(i,j)<=tolerance .and. phi_2(i,j)<=tolerance .and. j<ymin) then 
 					ymin=j
 				endif
 			enddo
@@ -94,9 +103,11 @@ contains
 
 					x=j+shift
 					if(x>SIZE) then 
-						temp(i,j)=0
+						dphi_1(i,j)=0
+                        dphi_2(i,j)=0
 					else
-						temp(i,j)=phi(i,x)
+						dphi_1(i,j)=phi_1(i,x) !dphi's used here as temp arrays to store new values of phi 
+						dphi_2(i,j)=phi_2(i,x)
 					endif 
 				enddo
 			enddo
@@ -108,9 +119,11 @@ contains
 
 					x=j+shift
 					if(x<=0) then 
-						temp(i,j)=1
+						dphi_1(i,j)=1
+                        dphi_2(i,j)=1
 					else
-						temp(i,j)=phi(i,x)
+						dphi_1(i,j)=phi_1(i,x)
+                        dphi_2(i,j)=phi_2(i,x)
 					endif
 				enddo 
 			enddo
@@ -123,7 +136,8 @@ contains
 
 		do j = 1,SIZE
 			do i=1,SIZE
-				phi(i,j)=temp(i,j)
+				phi_1(i,j)=dphi_1(i,j)
+				phi_2(i,j)=dphi_2(i,j)
 			enddo
 		enddo
 
@@ -139,7 +153,7 @@ contains
 
 			do j = 1,SIZE
 				do i=1,SIZE
-					write(1,*) i,j,phi(i,j)
+					write(1,*) i,j,phi_1(i,j),phi_2(i,j)
 				enddo
 				write(1,*)
 			enddo
