@@ -17,7 +17,7 @@ program fisher_standard
     alpha_2=1.5
 	dt=0.001
 	dx=0.1
-	maxt=50000
+	maxt=15000
 	totalshift=0
 
 	!initialize
@@ -69,7 +69,7 @@ program fisher_standard
 			call print_grid(t)
 		endif
 
-        call shift_everything()
+        !call shift_everything()
 
 	enddo
 
@@ -141,24 +141,24 @@ contains
 			enddo
 		enddo
 
-		end subroutine shift_everything
+	end subroutine shift_everything
 
-		subroutine print_grid(label)
+	subroutine print_grid(label)
 
-			integer, intent(in) :: label
-			character(len=1024) :: filename
+		integer, intent(in) :: label
+		character(len=1024) :: filename
 
-			write(filename,"(A7,I0,A4)") 'std_out',label, '.dat'
-			open(1,file=filename)
+		write(filename,"(A7,I0,A4)") 'std_out',label, '.dat'
+		open(1,file=filename)
 
-			do j = 1,SIZE
-				do i=1,SIZE
-					write(1,*) i,j,phi_1(i,j),phi_2(i,j)
-				enddo
-				write(1,*)
+		do j = 1,SIZE
+			do i=1,SIZE
+				write(1,*) i,j,phi_1(i,j),phi_2(i,j)
 			enddo
+			write(1,*)
+		enddo
 
-		end subroutine print_grid
+	end subroutine print_grid
 
 end program
 
