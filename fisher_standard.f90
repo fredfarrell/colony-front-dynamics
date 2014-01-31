@@ -69,7 +69,7 @@ program fisher_standard
 			call print_grid(t)
 		endif
 
-        !call shift_everything()
+        call shift_everything()
 
 	enddo
 
@@ -98,6 +98,7 @@ contains
 		totalshift = totalshift + shift
 
 		if (shift>0) then
+
 			do j = 1,SIZE
 				do i=1,SIZE
 
@@ -113,7 +114,7 @@ contains
 			enddo
 
 		else if(shift<0) then
-			
+
 			do j = 1,SIZE
 				do i=1,SIZE
 
