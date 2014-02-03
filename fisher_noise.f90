@@ -16,7 +16,7 @@ program fisher_noise
 	!parameters
 	D=.1
 	alpha_1=1.0
-	alpha_2=1.5
+	alpha_2=1.0
 	dt=0.00001
 	dx=0.1
 	maxt=2000000
@@ -105,6 +105,8 @@ program fisher_noise
 contains
  
   	subroutine shift_everything() !shift all the fields so that the contour is roughly centred in the sim box
+                                  !temp are temporary arrays to store m,n values
+                                  !dpsi are used as temporary arrays to store psi values
 
  		integer :: buffer,ymin,x,shift
  		real(8) :: tolerance
@@ -129,15 +131,15 @@ contains
 
  		totalshift = totalshift + shift
 
- 		if (shift>0) then
+ 		if (shift/=0) then
  			do j = 1,SIZE
  				do i=1,SIZE
 
  					x=j+shift
- 					if(x>SIZE) then 
- 						temp_n(i,j)=0 !temp are temporary arrays to store m,n values
+ 					if(x>SIZE .or. x<=0) then !deal with points 'outside the box'
+ 						temp_n(i,j)=merge(0,int(1/phi_min),x>SIZE) !different depending on whether you're at the top or the bottom
                         temp_m(i,j)=0
-                        dpsi_1(i,j)=0 !dpsi are being used as a temporary array to store psi values
+                        dpsi_1(i,j)=0 
                         dpsi_2(i,j)=0
  					else
  						temp_n(i,j)=n(i,x)
@@ -146,27 +148,6 @@ contains
                         dpsi_2(i,j)=psi_2(i,x)
  					endif 
  				enddo
- 			enddo
-
- 		else if(shift<0) then
-			
- 			do j = 1,SIZE
- 				do i=1,SIZE
-
- 					x=j+shift
- 					if(x<=0) then 
- 						temp_n(i,j)=1/phi_min
-                        temp_m(i,j)=0
-                        dpsi_1(i,j)=0
-                        dpsi_2(i,j)=0
- 					else
- 						temp_n(i,j)=n(i,x)
-                        temp_m(i,j)=m(i,x)
-                        dpsi_1(i,j)=psi_1(i,x)
-                        dpsi_2(i,j)=psi_2(i,x)
-                        
- 					endif
- 				enddo 
  			enddo
 
          else
