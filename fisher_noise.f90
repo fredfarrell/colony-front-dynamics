@@ -12,6 +12,7 @@ program fisher_noise
 	integer :: i,j,t,maxt,iup,idwn
     integer :: totalshift
     real(8) :: noise, phi_min, g, noise_max, sqrtdt
+    real(8), dimension(2) :: tot
 
 	!parameters
 	D=.1
@@ -19,7 +20,7 @@ program fisher_noise
 	alpha_2=1.0
 	dt=0.00001
 	dx=0.1
-	maxt=2000000
+	maxt=20000
 	g=5
 	sqrtdt=sqrt(dt)
 	phi_min=0.0001 !size of discretizaton of the fields (i.e. dphi)
@@ -42,7 +43,10 @@ program fisher_noise
 	!timestep
 	do t = 1, maxt
 
-		write(6,*) t, totalshift
+		if(mod(t, 1000)== 0) then
+            tot = total_phi()
+            write(6,*) t, totalshift,tot(1),tot(2)
+        endif
 
 		do j = 2,SIZE-1
 			do i=1, SIZE
@@ -184,6 +188,22 @@ contains
 
 	end subroutine print_grid
 
+    function total_phi() ! calculate values of phi_i integrated over the whole box
+
+        integer :: total_1, total_2
+        real(8),dimension(2) :: total_phi
+
+        do i=1,SIZE
+            do j=1,SIZE
+                total_1 = total_1 + n(i,j)
+                total_2 = total_2 + m(i,j)
+            enddo
+        enddo
+
+        total_phi(1) = total_1*phi_min
+        total_phi(2) = total_2*phi_min
+
+    end function total_phi
 
 
 end program
